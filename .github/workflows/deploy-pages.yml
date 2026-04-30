@@ -1,3 +1,4 @@
+# GitHub only runs workflows from the repository root. The app lives in nyc-transportation/.
 name: Deploy to GitHub Pages
 
 on:
@@ -16,6 +17,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nyc-transportation
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,6 +29,7 @@ jobs:
         with:
           node-version: "20"
           cache: npm
+          cache-dependency-path: nyc-transportation/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -32,10 +37,17 @@ jobs:
       - name: Build
         run: npm run build
 
+      # simdong.github.io/nyc-transportation/ maps to folder nyc-transportation/ in the published site
+      - name: Stage under /nyc-transportation
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p deploy/nyc-transportation
+          cp -r nyc-transportation/dist/. deploy/nyc-transportation/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: deploy
 
   deploy:
     needs: build
